@@ -1,0 +1,78 @@
+#include <iostream>
+#include <iomanip>
+#include <cstring>
+#include <locale>
+#include <string>
+#include <sstream>
+
+using namespace std;
+
+const char polibius_table[6][10] = {
+    {'С', 'О', 'В', 'У', 'Н', 'Ь', 'Я', 'А', 'Б', 'Г'},
+    {'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М'},
+    {'П', 'Р', 'Т', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ'},
+    {'Ы', 'Э', 'Ю', 'F', 'A', 'S', 'H', 'I', 'O', 'N'},
+    {'B', 'C', 'D', 'E', 'G', 'J', 'K', 'L', 'M', 'P'},
+    {'Q', 'P', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'}
+};
+
+void encrypt_Polibius(const char* input, string& output) {
+    const int m = 6, n = 10;
+
+    for (int k = 0; k < strlen(input); k++) {
+        char ch = toupper(input[k]);
+        bool found = false;
+
+        for (int i = 0; i < m && !found; i++) {
+            for(int j = 0; j < n && !found; j++) {
+                if (ch == polibius_table[i][j]) {
+                    output += to_string(i + 1) + to_string(j + 1) + " ";
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) {
+            output += ch;
+        }
+    }
+}
+
+void decrypt_Polibius(const string& input, string& output) {
+    const int m = 6, n = 10;
+    stringstream ss(input);
+    string code;
+
+    while(ss >> code) {
+        if (code.length() == 2 || code.length() == 3) {
+            int row = code[0] - '0';
+            int col = code[1] - '0';
+
+            if (row >= 1 && row <= m && col >= 1 && col <= n) {
+                output += polibius_table[row - 1][col - 1];
+            }
+        }
+        else {
+            output += '?';
+        }
+    }
+}
+
+int main() {
+    setlocale(LC_ALL, "ru_RU.UTF-8");
+    char input[256];
+    cout << "Введите текст: ";
+    cin.getline(input, sizeof(input));
+
+    string encrypted_output;
+    encrypt_Polibius(input, encrypted_output);
+
+    cout << "Зашифрованный текст: " << encrypted_output << endl;
+
+    string decrypted_output;
+    decrypt_Polibius(encrypted_output, decrypted_output);
+
+    cout << "Расшифрованный текст: " << decrypted_output << endl;
+
+    return 0;
+}
