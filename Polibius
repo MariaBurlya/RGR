@@ -1,9 +1,6 @@
 #include <iostream>
-#include <iomanip>
-#include <cstring>
-#include <locale>
 #include <string>
-#include <sstream>
+#include <unordered_map>
 
 using namespace std;
 
@@ -16,63 +13,70 @@ const char polibius_table[6][10] = {
     {'Q', 'P', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'}
 };
 
-void encrypt_Polibius(const char* input, string& output) {
-    const int m = 6, n = 10;
-
-    for (int k = 0; k < strlen(input); k++) {
-        char ch = toupper(input[k]);
-        bool found = false;
-
-        for (int i = 0; i < m && !found; i++) {
-            for(int j = 0; j < n && !found; j++) {
-                if (ch == polibius_table[i][j]) {
-                    output += to_string(i + 1) + to_string(j + 1) + " ";
-                    found = true;
-                }
-            }
-        }
-
-        if (!found) {
-            output += ch;
+unordered_map<char, pair<int, int>>
+create_encoding_map() {
+    unordered_map<char, pair<int, int>> encoding_map;
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 10; ++j) {
+            encoding_map[polibius_table[i][j]] = {i, j};
         }
     }
+    return encoding_map;
 }
 
-void decrypt_Polibius(const string& input, string& output) {
-    const int m = 6, n = 10;
-    stringstream ss(input);
-    string code;
+string encrypt_Polibius(const string& text) {
+    unordered_map<char, pair<int, int>> encoding_map = create_encoding_map();
+    string encrypted;
 
-    while(ss >> code) {
-        if (code.length() == 2 || code.length() == 3) {
-            int row = code[0] - '0';
-            int col = code[1] - '0';
-
-            if (row >= 1 && row <= m && col >= 1 && col <= n) {
-                output += polibius_table[row - 1][col - 1];
-            }
+    for (char c : text) {
+        if (encoding_map.find(c) != encoding_map.end()) {
+            auto coords = encoding_map[c];
+            encrypted += to_string(coords.first) + to_string(coords.second) + " ";
         }
         else {
-            output += '?';
+            encrypted += c;
         }
     }
+
+    return encrypted; 
+}
+
+string decrypt_Polibius(const string& encrypted) {
+    unordered_map<char, pair<int, int>> encoding_map = create_encoding_map();
+    unordered_map<pair<int, int>, char, hash<pair<int, int>>> decoding_map;
+
+    for (const auto& pair : encoding_map) {
+        decoding_map[pair.second] = pair.first;
+    }
+
+    string decrypted, current_number;
+    for (char c : encrypted) {
+        if (isdigit(c)) {
+            current_number += c;
+        }
+        else if (c == ' ' && current_number.length() == 2) {
+            int row = current_number[0] - '0';
+            int col = current_number[1] - '0';
+            decrypted += decoding_map[{row, col}];
+            current_number.clear();
+        }
+        else {
+            decrypted += c;
+        }
+    }
+    return decrypted;
 }
 
 int main() {
-    setlocale(LC_ALL, "ru_RU.UTF-8");
-    char input[256];
+    string text;
     cout << "Введите текст: ";
-    cin.getline(input, sizeof(input));
+    getline(cin, text); 
+    
+    string encrypted = encrypt_Polibius(text);
+    cout << "Зашифрованный текст: " << endl;
 
-    string encrypted_output;
-    encrypt_Polibius(input, encrypted_output);
-
-    cout << "Зашифрованный текст: " << encrypted_output << endl;
-
-    string decrypted_output;
-    decrypt_Polibius(encrypted_output, decrypted_output);
-
-    cout << "Расшифрованный текст: " << decrypted_output << endl;
+    string decrypted = decrypt_Polibius(text);
+    cout << "Дешифрованный текст: " << endl;
 
     return 0;
 }
